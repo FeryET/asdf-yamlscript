@@ -69,10 +69,6 @@ download_release() {
 	filename="$2"
 	filepath="$3"
 	url="$GH_REPO/releases/download/$version/$filename"
-	if [[ -n $DEBUG ]]; then
-		echo "Filename is: $filename"
-		echo "Downloading from $url"
-	fi
 	echo "* Downloading $TOOL_NAME release $version..."
 	curl "${curl_opts[@]}" -o "$filepath" -C - "$url" || fail "Could not download $url"
 }
