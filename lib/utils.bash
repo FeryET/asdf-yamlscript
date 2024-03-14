@@ -2,10 +2,9 @@
 
 set -euo pipefail
 
-# TODO: Ensure this is the correct GitHub homepage where releases can be downloaded for <YOUR TOOL>.
-GH_REPO="<TOOL REPO>"
-TOOL_NAME="<YOUR TOOL>"
-TOOL_TEST="<TOOL CHECK>"
+GH_REPO="https://github.com/yaml/yamlscript"
+TOOL_NAME="yamlscript"
+TOOL_TEST="ys --version"
 
 fail() {
 	echo -e "asdf-$TOOL_NAME: $*"
@@ -31,21 +30,51 @@ list_github_tags() {
 }
 
 list_all_versions() {
-	# TODO: Adapt this. By default we simply list the tag names from GitHub releases.
-	# Change this function if <YOUR TOOL> has other means of determining installable versions.
 	list_github_tags
 }
 
+get_os() {
+	os=$(uname -s | tr '[:upper:]' '[:lower:]')
+	if [ "$os" == "darwin" ]; then
+		os=macos
+	fi
+	echo "$os"
+}
+
+get_arch() {
+	arch=$(uname -m | tr '[:upper:]' '[:lower:]')
+	case $arch in
+	x86_64)
+		echo "x64"
+		;;
+	aarch64 | arm64)
+		echo "aarch64"
+		;;
+	*)
+		exit 1
+		;;
+	esac
+}
+
+get_archive_name() {
+	local version pkg_name
+	version="$1"
+	pkg_name="$2"
+	echo "$pkg_name-$version-$(get_os)-$(get_arch).tar.xz"
+}
+
 download_release() {
-	local version filename url
+	local version filename filepath
 	version="$1"
 	filename="$2"
-
-	# TODO: Adapt the release URL convention for <YOUR TOOL>
-	url="$GH_REPO/archive/v${version}.tar.gz"
-
+	filepath="$3"
+	url="$GH_REPO/releases/download/$version/$filename"
+	if [[ -n $DEBUG ]]; then
+		echo "Filename is: $filename"
+		echo "Downloading from $url"
+	fi
 	echo "* Downloading $TOOL_NAME release $version..."
-	curl "${curl_opts[@]}" -o "$filename" -C - "$url" || fail "Could not download $url"
+	curl "${curl_opts[@]}" -o "$filepath" -C - "$url" || fail "Could not download $url"
 }
 
 install_version() {
@@ -60,8 +89,6 @@ install_version() {
 	(
 		mkdir -p "$install_path"
 		cp -r "$ASDF_DOWNLOAD_PATH"/* "$install_path"
-
-		# TODO: Assert <YOUR TOOL> executable exists.
 		local tool_cmd
 		tool_cmd="$(echo "$TOOL_TEST" | cut -d' ' -f1)"
 		test -x "$install_path/$tool_cmd" || fail "Expected $install_path/$tool_cmd to be executable."
